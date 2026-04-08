@@ -1,23 +1,37 @@
 import { useState } from "react";
 import Papa from "papaparse";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+} from "recharts";
 
 function App() {
   const [data, setData] = useState([]);
 
+  // 📁 Handle CSV Upload
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
-
     if (!file) return;
 
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        console.log(results.data);
         setData(results.data);
       },
     });
   };
+
+  // 📊 Prepare Chart Data
+  const chartData = data.slice(0, 10).map((row) => ({
+    age: Number(row.Age),
+    glucose: Number(row.Glucose),
+  }));
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -43,7 +57,6 @@ function App() {
         <div className="bg-white shadow p-4 flex justify-between items-center">
           <h1 className="text-xl font-semibold">Welcome 👋</h1>
 
-          {/* File Upload */}
           <input
             type="file"
             accept=".csv"
@@ -79,7 +92,7 @@ function App() {
 
           </div>
 
-          {/* CSV Table */}
+          {/* 📊 CSV TABLE */}
           {data.length > 0 && (
             <div className="mt-8 bg-white p-4 rounded shadow overflow-auto">
               <h2 className="text-xl font-bold mb-4">
@@ -115,8 +128,56 @@ function App() {
             </div>
           )}
 
-        </div>
+          {/* 📈 BASIC INSIGHTS */}
+          {data.length > 0 && (
+            <div className="mt-8 bg-white p-4 rounded shadow">
+              <h2 className="text-xl font-bold mb-4">
+                Basic Insights
+              </h2>
 
+              <p className="mb-2">
+                <strong>Total Records:</strong> {data.length}
+              </p>
+
+              <p className="mb-2">
+                <strong>Average Glucose:</strong>{" "}
+                {(
+                  data.reduce(
+                    (sum, row) => sum + Number(row.Glucose || 0),
+                    0
+                  ) / data.length
+                ).toFixed(2)}
+              </p>
+
+              <p>
+                <strong>Max Age:</strong>{" "}
+                {Math.max(
+                  ...data.map((row) => Number(row.Age || 0))
+                )}
+              </p>
+            </div>
+          )}
+
+          {/* 📊 BAR CHART */}
+          {data.length > 0 && (
+            <div className="mt-8 bg-white p-4 rounded shadow">
+              <h2 className="text-xl font-bold mb-4">
+                Glucose vs Age
+              </h2>
+
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="age" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="glucose" fill="#3b82f6" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   );
