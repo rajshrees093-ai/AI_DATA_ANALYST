@@ -7,7 +7,6 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  ResponsiveContainer,
 } from "recharts";
 
 function App() {
@@ -15,231 +14,179 @@ function App() {
   const [query, setQuery] = useState("");
   const [answer, setAnswer] = useState("");
 
-  // ✅ BACKEND CONNECTION
+  // 🔗 Backend Test
   useEffect(() => {
     fetch("http://localhost:5000")
       .then((res) => res.text())
-      .then((data) => console.log("Backend:", data))
-      .catch((err) => console.error(err));
+      .then((data) => console.log("Backend:", data));
   }, []);
 
-  // 📁 CSV Upload
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  // 📂 CSV Upload
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
 
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: (results) => {
+      complete: function (results) {
         setData(results.data);
       },
     });
   };
 
-  // 📊 Chart Data (SAFE VERSION)
-  const chartData = data
-    .filter((row) => row.Age && row.Glucose)
-    .slice(0, 10)
-    .map((row) => ({
-      age: Number(row.Age),
-      glucose: Number(row.Glucose),
-    }))
-    .filter((item) => !isNaN(item.age) && !isNaN(item.glucose));
+  // 🤖 REAL AI FUNCTION (UPDATED 🔥)
+  const handleQuery = async () => {
+    if (!query) return;
 
-  // 🤖 AI Logic (Frontend)
-  const handleQuery = () => {
-    const q = query.toLowerCase();
+    try {
+      const res = await fetch("http://localhost:5000/ask", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ question: query }),
+      });
 
-    if (!data.length) {
-      setAnswer("Please upload a CSV first 📁");
-      return;
-    }
+      const data = await res.json();
 
-    if (q.includes("average glucose")) {
-      const avg =
-        data.reduce((sum, row) => sum + Number(row.Glucose || 0), 0) /
-        data.length;
-
-      setAnswer(`Average Glucose is ${avg.toFixed(2)}`);
-    } else if (q.includes("max age")) {
-      const max = Math.max(...data.map((row) => Number(row.Age || 0)));
-
-      setAnswer(`Max Age is ${max}`);
-    } else if (q.includes("total records")) {
-      setAnswer(`Total records are ${data.length}`);
-    } else {
-      setAnswer("Sorry, I don't understand yet 🤔");
+      setAnswer(data.answer);
+    } catch (error) {
+      console.error(error);
+      setAnswer("Error connecting to AI ❌");
     }
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
-
+    <div className="flex">
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-blue-600 mb-8">
+      <div className="w-60 h-screen bg-gray-100 p-4">
+        <h1 className="text-xl font-bold text-blue-600 mb-6">
           AI Dashboard
-        </h2>
+        </h1>
 
         <ul className="space-y-4">
-          <li className="hover:text-blue-500 cursor-pointer">📊 Dashboard</li>
-          <li className="hover:text-blue-500 cursor-pointer">📁 Upload CSV</li>
-          <li className="hover:text-blue-500 cursor-pointer">💬 Ask AI</li>
-          <li className="hover:text-blue-500 cursor-pointer">⚙ Settings</li>
+          <li>📊 Dashboard</li>
+          <li>📁 Upload CSV</li>
+          <li>🤖 Ask AI</li>
+          <li>⚙️ Settings</li>
         </ul>
       </div>
 
-      {/* Main Section */}
-      <div className="flex-1 flex flex-col">
+      {/* Main */}
+      <div className="flex-1 p-6 bg-gray-50">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Welcome 👋</h2>
 
-        {/* Navbar */}
-        <div className="bg-white shadow p-4 flex justify-between items-center">
-          <h1 className="text-xl font-semibold">Welcome 👋</h1>
-
-          <input
-            type="file"
-            accept=".csv"
-            onChange={handleFileUpload}
-            className="border p-2 rounded"
-          />
+          <input type="file" onChange={handleFileUpload} />
         </div>
 
-        {/* Content */}
-        <div className="p-6">
+        {/* Cards */}
+        <h2 className="text-xl font-bold mb-4">
+          Dashboard Overview
+        </h2>
 
-          <h2 className="text-2xl font-bold mb-6">
-            Dashboard Overview
-          </h2>
-
-          {/* Cards */}
-          <div className="grid grid-cols-3 gap-6">
-
-            <div className="bg-white p-5 rounded-lg shadow">
-              <h3 className="text-gray-500">Total Sales</h3>
-              <p className="text-3xl font-bold mt-2 text-green-500">₹50,000</p>
-            </div>
-
-            <div className="bg-white p-5 rounded-lg shadow">
-              <h3 className="text-gray-500">Orders</h3>
-              <p className="text-3xl font-bold mt-2 text-blue-500">120</p>
-            </div>
-
-            <div className="bg-white p-5 rounded-lg shadow">
-              <h3 className="text-gray-500">Customers</h3>
-              <p className="text-3xl font-bold mt-2 text-purple-500">80</p>
-            </div>
-
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-white p-4 rounded shadow">
+            <p>Total Sales</p>
+            <h3 className="text-green-600 text-2xl font-bold">
+              ₹50,000
+            </h3>
           </div>
 
-          {/* 📊 TABLE */}
-          {data.length > 0 && (
-            <div className="mt-8 bg-white p-4 rounded shadow overflow-auto">
-              <h2 className="text-xl font-bold mb-4">
-                Uploaded Data
-              </h2>
+          <div className="bg-white p-4 rounded shadow">
+            <p>Orders</p>
+            <h3 className="text-blue-600 text-2xl font-bold">
+              120
+            </h3>
+          </div>
 
-              <table className="w-full border border-gray-300">
-                <thead>
-                  <tr>
-                    {Object.keys(data[0]).map((key) => (
-                      <th key={key} className="border p-2 bg-gray-200">
-                        {key}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
+          <div className="bg-white p-4 rounded shadow">
+            <p>Customers</p>
+            <h3 className="text-purple-600 text-2xl font-bold">
+              80
+            </h3>
+          </div>
+        </div>
 
-                <tbody>
-                  {data.map((row, index) => (
-                    <tr key={index} className="hover:bg-gray-100">
-                      {Object.values(row).map((val, i) => (
-                        <td key={i} className="border p-2">
-                          {val}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* 📈 INSIGHTS */}
-          {data.length > 0 && (
-            <div className="mt-8 bg-white p-4 rounded shadow">
-              <h2 className="text-xl font-bold mb-4">
-                Basic Insights
-              </h2>
-
-              <p>Total Records: {data.length}</p>
-
-              <p>
-                Average Glucose:{" "}
-                {(
-                  data.reduce(
-                    (sum, row) => sum + Number(row.Glucose || 0),
-                    0
-                  ) / data.length
-                ).toFixed(2)}
-              </p>
-
-              <p>
-                Max Age:{" "}
-                {Math.max(
-                  ...data.map((row) => Number(row.Age || 0))
-                )}
-              </p>
-            </div>
-          )}
-
-          {/* 📊 CHART */}
-          {chartData.length > 0 && (
-            <div className="mt-8 bg-white p-4 rounded shadow">
-              <h2 className="text-xl font-bold mb-4">
-                Glucose vs Age
-              </h2>
-
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="age" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="glucose" fill="#3b82f6" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* 🤖 AI QUERY */}
+        {/* Insights */}
+        {data.length > 0 && (
           <div className="mt-8 bg-white p-4 rounded shadow">
             <h2 className="text-xl font-bold mb-4">
-              Ask AI 🤖
+              Basic Insights
             </h2>
 
-            <input
-              type="text"
-              placeholder="Ask something like 'average glucose'"
-              className="border p-2 w-full rounded"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
+            <p>Total Records: {data.length}</p>
 
-            <button
-              onClick={handleQuery}
-              className="mt-3 bg-blue-500 text-white px-4 py-2 rounded"
-            >
-              Ask
-            </button>
+            <p>
+              Average Glucose:{" "}
+              {(
+                data.reduce(
+                  (sum, row) =>
+                    sum + Number(row.Glucose || 0),
+                  0
+                ) / data.length
+              ).toFixed(2)}
+            </p>
 
-            {answer && (
-              <p className="mt-4 font-semibold text-green-600">
-                Answer: {answer}
-              </p>
-            )}
+            <p>
+              Max Age:{" "}
+              {Math.max(
+                ...data.map((row) =>
+                  Number(row.Age || 0)
+                )
+              )}
+            </p>
           </div>
+        )}
 
+        {/* Chart */}
+        {data.length > 0 && (
+          <div className="mt-8 bg-white p-4 rounded shadow">
+            <h2 className="text-xl font-bold mb-4">
+              Glucose vs Age
+            </h2>
+
+            <BarChart
+              width={600}
+              height={300}
+              data={data.slice(0, 10)}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="Age" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="Glucose" />
+            </BarChart>
+          </div>
+        )}
+
+        {/* 🤖 Ask AI */}
+        <div className="mt-8 bg-white p-4 rounded shadow">
+          <h2 className="text-xl font-bold mb-4">
+            Ask AI 🤖
+          </h2>
+
+          <input
+            type="text"
+            placeholder="Ask anything..."
+            className="border p-2 w-full rounded"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+
+          <button
+            onClick={handleQuery}
+            className="mt-3 bg-blue-500 text-white px-4 py-2 rounded"
+          >
+            Ask
+          </button>
+
+          {answer && (
+            <p className="mt-4 font-semibold text-green-600">
+              Answer: {answer}
+            </p>
+          )}
         </div>
       </div>
     </div>
