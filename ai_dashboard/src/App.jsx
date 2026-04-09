@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Papa from "papaparse";
 import {
   BarChart,
@@ -15,6 +15,14 @@ function App() {
   const [query, setQuery] = useState("");
   const [answer, setAnswer] = useState("");
 
+  // ✅ BACKEND CONNECTION
+  useEffect(() => {
+    fetch("http://localhost:5000")
+      .then((res) => res.text())
+      .then((data) => console.log("Backend:", data))
+      .catch((err) => console.error(err));
+  }, []);
+
   // 📁 CSV Upload
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -29,13 +37,17 @@ function App() {
     });
   };
 
-  // 📊 Chart Data
-  const chartData = data.slice(0, 10).map((row) => ({
-    age: Number(row.Age),
-    glucose: Number(row.Glucose),
-  }));
+  // 📊 Chart Data (SAFE VERSION)
+  const chartData = data
+    .filter((row) => row.Age && row.Glucose)
+    .slice(0, 10)
+    .map((row) => ({
+      age: Number(row.Age),
+      glucose: Number(row.Glucose),
+    }))
+    .filter((item) => !isNaN(item.age) && !isNaN(item.glucose));
 
-  // 🤖 AI Logic
+  // 🤖 AI Logic (Frontend)
   const handleQuery = () => {
     const q = query.toLowerCase();
 
@@ -182,7 +194,7 @@ function App() {
           )}
 
           {/* 📊 CHART */}
-          {data.length > 0 && (
+          {chartData.length > 0 && (
             <div className="mt-8 bg-white p-4 rounded shadow">
               <h2 className="text-xl font-bold mb-4">
                 Glucose vs Age
