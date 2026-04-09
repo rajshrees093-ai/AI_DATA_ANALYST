@@ -12,8 +12,10 @@ import {
 
 function App() {
   const [data, setData] = useState([]);
+  const [query, setQuery] = useState("");
+  const [answer, setAnswer] = useState("");
 
-  // 📁 Handle CSV Upload
+  // 📁 CSV Upload
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -27,11 +29,37 @@ function App() {
     });
   };
 
-  // 📊 Prepare Chart Data
+  // 📊 Chart Data
   const chartData = data.slice(0, 10).map((row) => ({
     age: Number(row.Age),
     glucose: Number(row.Glucose),
   }));
+
+  // 🤖 AI Logic
+  const handleQuery = () => {
+    const q = query.toLowerCase();
+
+    if (!data.length) {
+      setAnswer("Please upload a CSV first 📁");
+      return;
+    }
+
+    if (q.includes("average glucose")) {
+      const avg =
+        data.reduce((sum, row) => sum + Number(row.Glucose || 0), 0) /
+        data.length;
+
+      setAnswer(`Average Glucose is ${avg.toFixed(2)}`);
+    } else if (q.includes("max age")) {
+      const max = Math.max(...data.map((row) => Number(row.Age || 0)));
+
+      setAnswer(`Max Age is ${max}`);
+    } else if (q.includes("total records")) {
+      setAnswer(`Total records are ${data.length}`);
+    } else {
+      setAnswer("Sorry, I don't understand yet 🤔");
+    }
+  };
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -92,7 +120,7 @@ function App() {
 
           </div>
 
-          {/* 📊 CSV TABLE */}
+          {/* 📊 TABLE */}
           {data.length > 0 && (
             <div className="mt-8 bg-white p-4 rounded shadow overflow-auto">
               <h2 className="text-xl font-bold mb-4">
@@ -103,10 +131,7 @@ function App() {
                 <thead>
                   <tr>
                     {Object.keys(data[0]).map((key) => (
-                      <th
-                        key={key}
-                        className="border p-2 bg-gray-200 text-left"
-                      >
+                      <th key={key} className="border p-2 bg-gray-200">
                         {key}
                       </th>
                     ))}
@@ -128,19 +153,17 @@ function App() {
             </div>
           )}
 
-          {/* 📈 BASIC INSIGHTS */}
+          {/* 📈 INSIGHTS */}
           {data.length > 0 && (
             <div className="mt-8 bg-white p-4 rounded shadow">
               <h2 className="text-xl font-bold mb-4">
                 Basic Insights
               </h2>
 
-              <p className="mb-2">
-                <strong>Total Records:</strong> {data.length}
-              </p>
+              <p>Total Records: {data.length}</p>
 
-              <p className="mb-2">
-                <strong>Average Glucose:</strong>{" "}
+              <p>
+                Average Glucose:{" "}
                 {(
                   data.reduce(
                     (sum, row) => sum + Number(row.Glucose || 0),
@@ -150,7 +173,7 @@ function App() {
               </p>
 
               <p>
-                <strong>Max Age:</strong>{" "}
+                Max Age:{" "}
                 {Math.max(
                   ...data.map((row) => Number(row.Age || 0))
                 )}
@@ -158,7 +181,7 @@ function App() {
             </div>
           )}
 
-          {/* 📊 BAR CHART */}
+          {/* 📊 CHART */}
           {data.length > 0 && (
             <div className="mt-8 bg-white p-4 rounded shadow">
               <h2 className="text-xl font-bold mb-4">
@@ -176,6 +199,34 @@ function App() {
               </ResponsiveContainer>
             </div>
           )}
+
+          {/* 🤖 AI QUERY */}
+          <div className="mt-8 bg-white p-4 rounded shadow">
+            <h2 className="text-xl font-bold mb-4">
+              Ask AI 🤖
+            </h2>
+
+            <input
+              type="text"
+              placeholder="Ask something like 'average glucose'"
+              className="border p-2 w-full rounded"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+
+            <button
+              onClick={handleQuery}
+              className="mt-3 bg-blue-500 text-white px-4 py-2 rounded"
+            >
+              Ask
+            </button>
+
+            {answer && (
+              <p className="mt-4 font-semibold text-green-600">
+                Answer: {answer}
+              </p>
+            )}
+          </div>
 
         </div>
       </div>
