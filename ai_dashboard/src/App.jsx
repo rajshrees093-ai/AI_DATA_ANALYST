@@ -8,12 +8,20 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
+import {
+  FiHome,
+  FiUpload,
+  FiSettings,
+  FiMessageSquare,
+  FiMoon,
+} from "react-icons/fi";
 
 function App() {
   const [data, setData] = useState([]);
   const [query, setQuery] = useState("");
   const [answer, setAnswer] = useState("");
   const [darkMode, setDarkMode] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Backend test
   useEffect(() => {
@@ -22,19 +30,15 @@ function App() {
       .then((data) => console.log("Backend:", data));
   }, []);
 
-  // CSV upload
+  // CSV Upload
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
 
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: function (results) {
-        const clean = results.data.filter(
-          (row) => Object.keys(row).length > 0
-        );
-        setData(clean);
+        setData(results.data);
       },
     });
   };
@@ -51,84 +55,97 @@ function App() {
       });
 
       const result = await res.json();
-      setAnswer(result.answer || "No response");
-    } catch (err) {
+      setAnswer(result.answer);
+    } catch {
       setAnswer("AI not working ❌");
     }
   };
 
   return (
-    <div className={darkMode ? "bg-gray-900 text-white" : "bg-gray-100"}>
-      <div className="flex min-h-screen">
-        
+    <div className={darkMode ? "dark" : ""}>
+      <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-white">
+
         {/* Sidebar */}
-        <div className="w-60 bg-white dark:bg-gray-800 p-5 shadow">
-          <h1 className="text-xl font-bold text-blue-600 mb-6">
-            AI Dashboard
+        <div
+          className={`${
+            sidebarOpen ? "w-64" : "w-20"
+          } bg-white dark:bg-gray-800 shadow-lg transition-all duration-300 p-4`}
+        >
+          <h1 className="text-xl font-bold text-blue-600 mb-8">
+            🤖 {sidebarOpen && "AI Dashboard"}
           </h1>
 
-          <ul className="space-y-4">
-            <li>📊 Dashboard</li>
-            <li>📁 Upload CSV</li>
-            <li>🤖 Ask AI</li>
-            <li>⚙️ Settings</li>
+          <ul className="space-y-6">
+            <li className="flex items-center gap-3 hover:text-blue-500 cursor-pointer">
+              <FiHome /> {sidebarOpen && "Dashboard"}
+            </li>
+            <li className="flex items-center gap-3 hover:text-blue-500 cursor-pointer">
+              <FiUpload /> {sidebarOpen && "Upload CSV"}
+            </li>
+            <li className="flex items-center gap-3 hover:text-blue-500 cursor-pointer">
+              <FiMessageSquare /> {sidebarOpen && "Ask AI"}
+            </li>
+            <li className="flex items-center gap-3 hover:text-blue-500 cursor-pointer">
+              <FiSettings /> {sidebarOpen && "Settings"}
+            </li>
           </ul>
+
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="mt-10 text-sm text-gray-500"
+          >
+            Toggle
+          </button>
         </div>
 
-        {/* Main Content */}
+        {/* Main */}
         <div className="flex-1 p-6">
-          
-          {/* Navbar */}
-          <div className="flex justify-between mb-6">
-            <h2 className="text-xl font-semibold">Welcome 👋</h2>
 
-            <div className="flex gap-4">
+          {/* Topbar */}
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Dashboard 🚀</h2>
+
+            <div className="flex gap-4 items-center">
               <input type="file" onChange={handleFileUpload} />
 
               <button
                 onClick={() => setDarkMode(!darkMode)}
-                className="bg-gray-800 text-white px-3 py-1 rounded"
+                className="flex items-center gap-2 bg-gray-800 text-white px-3 py-2 rounded"
               >
-                Toggle Mode 🌙
+                <FiMoon /> Mode
               </button>
             </div>
           </div>
 
-          {/* Cards */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-white p-4 rounded shadow">
-              <p>Total Sales</p>
-              <h3 className="text-green-600 text-2xl font-bold">
-                ₹50,000
-              </h3>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-3 gap-6 mb-8">
+            <div className="bg-gradient-to-r from-green-400 to-green-600 text-white p-6 rounded-xl shadow-lg">
+              <h4>Total Sales</h4>
+              <h2 className="text-2xl font-bold">₹50,000</h2>
             </div>
 
-            <div className="bg-white p-4 rounded shadow">
-              <p>Orders</p>
-              <h3 className="text-blue-600 text-2xl font-bold">
-                120
-              </h3>
+            <div className="bg-gradient-to-r from-blue-400 to-blue-600 text-white p-6 rounded-xl shadow-lg">
+              <h4>Orders</h4>
+              <h2 className="text-2xl font-bold">120</h2>
             </div>
 
-            <div className="bg-white p-4 rounded shadow">
-              <p>Customers</p>
-              <h3 className="text-purple-600 text-2xl font-bold">
-                80
-              </h3>
+            <div className="bg-gradient-to-r from-purple-400 to-purple-600 text-white p-6 rounded-xl shadow-lg">
+              <h4>Customers</h4>
+              <h2 className="text-2xl font-bold">80</h2>
             </div>
           </div>
 
           {/* Table */}
-          {data && data.length > 0 && data[0] && (
-            <div className="bg-white p-4 rounded shadow mb-6">
-              <h2 className="text-lg font-bold mb-3">Uploaded Data</h2>
+          {data.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow mb-8">
+              <h3 className="text-lg font-bold mb-4">Dataset Preview</h3>
 
               <div className="overflow-auto max-h-60">
-                <table className="w-full border">
-                  <thead>
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-200 dark:bg-gray-700">
                     <tr>
                       {Object.keys(data[0]).map((key) => (
-                        <th key={key} className="border p-2 bg-gray-200">
+                        <th key={key} className="p-2">
                           {key}
                         </th>
                       ))}
@@ -137,9 +154,9 @@ function App() {
 
                   <tbody>
                     {data.slice(0, 10).map((row, i) => (
-                      <tr key={i}>
+                      <tr key={i} className="border-b">
                         {Object.values(row).map((val, j) => (
-                          <td key={j} className="border p-2">
+                          <td key={j} className="p-2">
                             {val}
                           </td>
                         ))}
@@ -152,24 +169,19 @@ function App() {
           )}
 
           {/* Chart */}
-          {data && data.length > 0 && (
-            <div className="bg-white p-4 rounded shadow mb-6">
-              <h2 className="text-lg font-bold mb-3">
-                Glucose vs Age
-              </h2>
+          {data.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow mb-8">
+              <h3 className="text-lg font-bold mb-4">
+                Glucose vs Age 📊
+              </h3>
 
               <BarChart
                 width={600}
                 height={300}
-                data={data
-                  .slice(0, 10)
-                  .map((row) => ({
-                    Age: Number(row.Age),
-                    Glucose: Number(row.Glucose),
-                  }))
-                  .filter(
-                    (d) => !isNaN(d.Age) && !isNaN(d.Glucose)
-                  )}
+                data={data.slice(0, 10).map((row) => ({
+                  Age: Number(row.Age),
+                  Glucose: Number(row.Glucose),
+                }))}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="Age" />
@@ -180,28 +192,26 @@ function App() {
             </div>
           )}
 
-          {/* AI Section */}
-          <div className="bg-white p-4 rounded shadow">
-            <h2 className="text-lg font-bold mb-3">Ask AI 🤖</h2>
+          {/* AI Panel */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow">
+            <h3 className="text-lg font-bold mb-4">Ask AI 🤖</h3>
 
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="border p-2 w-full rounded"
-              placeholder="Ask anything..."
+              className="border p-3 w-full rounded mb-3 text-black"
+              placeholder="Ask something..."
             />
 
             <button
               onClick={handleQuery}
-              className="mt-3 bg-blue-500 text-white px-4 py-2 rounded"
+              className="bg-blue-500 text-white px-4 py-2 rounded"
             >
               Ask
             </button>
 
             {answer && (
-              <p className="mt-3 text-green-600 font-semibold">
-                {answer}
-              </p>
+              <p className="mt-4 text-green-500">{answer}</p>
             )}
           </div>
         </div>
