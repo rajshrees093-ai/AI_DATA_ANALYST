@@ -1,47 +1,60 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const OpenAI = require("openai");
 
 dotenv.config();
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 // Test route
 app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
 });
 
-// AI route
+// ✅ AI ROUTE (FIXED)
 app.post("/ask", async (req, res) => {
   try {
-    const { question } = req.body;
+    const { question, data } = req.body;
 
-    // TEMP: dummy AI (so it ALWAYS works)
-    if (question.toLowerCase().includes("diabetes")) {
-      return res.json({
-        answer: "Diabetes is a condition where blood sugar levels are high.",
-      });
-    }
+    const prompt = `
+You are a data analyst AI.
 
-    if (question.toLowerCase().includes("glucose")) {
-      return res.json({
-        answer: "Glucose is a type of sugar in your blood.",
-      });
-    }
+Dataset:
+${JSON.stringify(data)}
 
-    res.json({
-      answer: "AI learning... ask something else 🤖",
+User question:
+${question}
+
+Answer clearly based on dataset.
+`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
     });
 
+    const answer = response.choices[0].message.content;
+
+    res.json({ answer });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Server error" });
+    console.log("ERROR:", error.message);
+    res.status(500).json({ answer: "AI error ❌" });
   }
 });
 
+// Server start
 app.listen(5000, () => {
   console.log("Server running on port 5000 🚀");
 });

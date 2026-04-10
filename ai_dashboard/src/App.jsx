@@ -55,7 +55,10 @@ function App() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ question: query }),
+        body: JSON.stringify({
+          question: query,
+          data: data.slice(0, 50), // send sample data
+        }),
       });
 
       const result = await res.json();
