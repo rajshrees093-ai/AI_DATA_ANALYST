@@ -13,26 +13,30 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Test route
+// ✅ TEST ROUTE
 app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
 });
 
-// ✅ AI ROUTE (FIXED)
+// ✅ AI ROUTE (FINAL CLEAN)
 app.post("/ask", async (req, res) => {
   try {
     const { question, data } = req.body;
 
     const prompt = `
-You are a data analyst AI.
+You are an expert data analyst.
 
 Dataset:
 ${JSON.stringify(data)}
 
-User question:
-${question}
+Instructions:
+- Answer ONLY using dataset
+- Be short and clear
+- Do calculations if needed
+- If unrelated → say "Not related to dataset"
 
-Answer clearly based on dataset.
+User Question:
+${question}
 `;
 
     const response = await openai.chat.completions.create({
@@ -48,13 +52,17 @@ Answer clearly based on dataset.
     const answer = response.choices[0].message.content;
 
     res.json({ answer });
+
   } catch (error) {
     console.log("ERROR:", error.message);
-    res.status(500).json({ answer: "AI error ❌" });
+
+    res.status(500).json({
+      answer: "AI error ❌",
+    });
   }
 });
 
-// Server start
+// ✅ SERVER START
 app.listen(5000, () => {
   console.log("Server running on port 5000 🚀");
 });
