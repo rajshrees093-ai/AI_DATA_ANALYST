@@ -29,29 +29,29 @@ function App() {
   };
 
   // ✅ AI Query
-  const handleQuery = async () => {
-    if (!query) return;
+ const handleQuery = async () => {
+  if (!query) return;
 
-    setAnswer("Thinking... 🤖");
+  setAnswer("Thinking... 🤖");
 
-    try {
-      const res = await fetch("http://localhost:5000/ask", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          question: query,
-          data: data.slice(0, 100),
-        }),
-      });
+  try {
+    const res = await fetch("http://localhost:5000/ask", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        question: query,
+        data: data,
+      }),
+    });
 
-      const result = await res.json();
-      setAnswer(result.answer);
-    } catch {
-      setAnswer("AI not working ❌");
-    }
-  };
+    const result = await res.json();
+    setAnswer(result.answer);
+  } catch {
+    setAnswer("Server not responding ❌");
+  }
+};
 
   return (
     <div className={darkMode ? "dark" : ""}>

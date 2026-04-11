@@ -9,7 +9,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ OpenAI setup
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -19,30 +18,51 @@ app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
 });
 
-// ✅ AI ROUTE (FULL + FALLBACK)
+// ✅ SMART LOCAL AI FUNCTION
+function localAI(question, data) {
+  const q = question.toLowerCase();
+
+  if (!data || data.length === 0) {
+    return "No dataset uploaded.";
+  }
+
+  if (q.includes("average glucose")) {
+    const avg =
+      data.reduce((sum, row) => sum + Number(row.Glucose || 0), 0) /
+      data.length;
+    return `Average glucose is ${avg.toFixed(2)}`;
+  }
+
+  if (q.includes("max age")) {
+    const max = Math.max(...data.map((r) => Number(r.Age || 0)));
+    return `Max age is ${max}`;
+  }
+
+  if (q.includes("total")) {
+    return `Total records are ${data.length}`;
+  }
+
+  if (q.includes("min age")) {
+    const min = Math.min(...data.map((r) => Number(r.Age || 0)));
+    return `Minimum age is ${min}`;
+  }
+
+  return null; // means not handled
+}
+
+// ✅ AI ROUTE (FINAL)
 app.post("/ask", async (req, res) => {
+  const { question, data } = req.body;
+
   try {
-    const { question, data } = req.body;
-    const q = question.toLowerCase();
+    // 🔥 1. TRY LOCAL AI FIRST
+    const localAnswer = localAI(question, data);
 
-    // 🔥 LOCAL FALLBACK (works without API credits)
-    if (q.includes("average glucose")) {
-      const avg =
-        data.reduce((sum, row) => sum + Number(row.Glucose || 0), 0) /
-        data.length;
-      return res.json({ answer: `Average glucose is ${avg.toFixed(2)}` });
+    if (localAnswer) {
+      return res.json({ answer: localAnswer });
     }
 
-    if (q.includes("max age")) {
-      const max = Math.max(...data.map((r) => Number(r.Age || 0)));
-      return res.json({ answer: `Max age is ${max}` });
-    }
-
-    if (q.includes("total")) {
-      return res.json({ answer: `Total records are ${data.length}` });
-    }
-
-    // 🤖 REAL AI (needs credits)
+    // 🔥 2. TRY OPENAI (if credits exist)
     const prompt = `
 You are a data analyst.
 
@@ -58,20 +78,22 @@ ${question}
       messages: [{ role: "user", content: prompt }],
     });
 
-    res.json({
+    return res.json({
       answer: response.choices[0].message.content,
     });
 
   } catch (error) {
-    console.log("ERROR:", error.message);
+    console.log("OpenAI failed → fallback");
 
-    res.json({
-      answer: "AI limited (no credits). Using basic analysis 🤖",
+    // 🔥 3. FINAL FALLBACK
+    return res.json({
+      answer:
+        "AI unavailable (no credits). Try questions like 'average glucose', 'max age', 'total records'.",
     });
   }
 });
 
-// ✅ SERVER START
+// ✅ SERVER
 app.listen(5000, () => {
   console.log("Server running on port 5000 🚀");
 });
