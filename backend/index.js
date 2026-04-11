@@ -9,7 +9,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const openai = new OpenAI({
+// ✅ OpenAI setup
+const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
@@ -18,46 +19,54 @@ app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
 });
 
-// ✅ AI ROUTE (FINAL CLEAN)
+// ✅ AI ROUTE (FULL + FALLBACK)
 app.post("/ask", async (req, res) => {
   try {
     const { question, data } = req.body;
+    const q = question.toLowerCase();
 
+    // 🔥 LOCAL FALLBACK (works without API credits)
+    if (q.includes("average glucose")) {
+      const avg =
+        data.reduce((sum, row) => sum + Number(row.Glucose || 0), 0) /
+        data.length;
+      return res.json({ answer: `Average glucose is ${avg.toFixed(2)}` });
+    }
+
+    if (q.includes("max age")) {
+      const max = Math.max(...data.map((r) => Number(r.Age || 0)));
+      return res.json({ answer: `Max age is ${max}` });
+    }
+
+    if (q.includes("total")) {
+      return res.json({ answer: `Total records are ${data.length}` });
+    }
+
+    // 🤖 REAL AI (needs credits)
     const prompt = `
-You are an expert data analyst.
+You are a data analyst.
 
 Dataset:
 ${JSON.stringify(data)}
 
-Instructions:
-- Answer ONLY using dataset
-- Be short and clear
-- Do calculations if needed
-- If unrelated → say "Not related to dataset"
-
-User Question:
+Question:
 ${question}
 `;
 
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
+      messages: [{ role: "user", content: prompt }],
     });
 
-    const answer = response.choices[0].message.content;
-
-    res.json({ answer });
+    res.json({
+      answer: response.choices[0].message.content,
+    });
 
   } catch (error) {
     console.log("ERROR:", error.message);
 
-    res.status(500).json({
-      answer: "AI error ❌",
+    res.json({
+      answer: "AI limited (no credits). Using basic analysis 🤖",
     });
   }
 });

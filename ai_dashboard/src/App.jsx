@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Papa from "papaparse";
-import { motion } from "framer-motion";
 import {
   BarChart,
   Bar,
@@ -9,33 +8,15 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import {
-  FiHome,
-  FiUpload,
-  FiSettings,
-  FiMessageSquare,
-  FiMoon,
-} from "react-icons/fi";
 
 function App() {
   const [data, setData] = useState([]);
   const [query, setQuery] = useState("");
   const [answer, setAnswer] = useState("");
+  const [darkMode, setDarkMode] = useState(false);
 
-  // ✅ Dark mode applied globally
-  const toggleDark = () => {
-    document.documentElement.classList.toggle("dark");
-  };
-
-  // Backend test
-  useEffect(() => {
-    fetch("http://localhost:5000")
-      .then((res) => res.text())
-      .then((data) => console.log("Backend:", data));
-  }, []);
-
-  // CSV Upload
-  const handleFileUpload = (e) => {
+  // ✅ CSV Upload
+  const handleFile = (e) => {
     const file = e.target.files[0];
 
     Papa.parse(file, {
@@ -47,8 +28,12 @@ function App() {
     });
   };
 
-  // AI
+  // ✅ AI Query
   const handleQuery = async () => {
+    if (!query) return;
+
+    setAnswer("Thinking... 🤖");
+
     try {
       const res = await fetch("http://localhost:5000/ask", {
         method: "POST",
@@ -57,7 +42,7 @@ function App() {
         },
         body: JSON.stringify({
           question: query,
-          data: data.slice(0, 50), // send sample data
+          data: data.slice(0, 100),
         }),
       });
 
@@ -69,155 +54,170 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-white transition-all">
+    <div className={darkMode ? "dark" : ""}>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-black dark:text-white flex">
+        
+        {/* Sidebar */}
+        <div className="w-64 bg-white dark:bg-gray-800 p-5 shadow">
+          <h1 className="text-2xl font-bold mb-6">AI Dashboard</h1>
 
-      {/* Sidebar */}
-      <motion.div
-        initial={{ x: -100 }}
-        animate={{ x: 0 }}
-        className="w-64 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg shadow-xl p-6"
-      >
-        <h1 className="text-2xl font-bold text-blue-600 mb-10">
-          🤖 AI Panel
-        </h1>
-
-        <ul className="space-y-6">
-          <li className="flex items-center gap-3 hover:text-blue-500 cursor-pointer">
-            <FiHome /> Dashboard
-          </li>
-          <li className="flex items-center gap-3 hover:text-blue-500 cursor-pointer">
-            <FiUpload /> Upload
-          </li>
-          <li className="flex items-center gap-3 hover:text-blue-500 cursor-pointer">
-            <FiMessageSquare /> Ask AI
-          </li>
-          <li className="flex items-center gap-3 hover:text-blue-500 cursor-pointer">
-            <FiSettings /> Settings
-          </li>
-        </ul>
-      </motion.div>
-
-      {/* Main */}
-      <div className="flex-1 p-8">
-
-        {/* Top Bar */}
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold">Dashboard ✨</h2>
-
-          <div className="flex gap-4 items-center">
-            <input
-              type="file"
-              onChange={handleFileUpload}
-              className="bg-white dark:bg-gray-700 p-2 rounded shadow"
-            />
-
-            <button
-              onClick={toggleDark}
-              className="bg-black text-white px-4 py-2 rounded flex items-center gap-2"
-            >
-              <FiMoon /> Toggle Mode
-            </button>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-6 mb-10">
-          {[
-            { title: "Revenue", value: "₹50,000", color: "from-green-400 to-green-600" },
-            { title: "Orders", value: "120", color: "from-blue-400 to-blue-600" },
-            { title: "Users", value: "80", color: "from-purple-400 to-purple-600" },
-          ].map((card, i) => (
-            <motion.div
-              key={i}
-              whileHover={{ scale: 1.05 }}
-              className={`bg-gradient-to-r ${card.color} text-white p-6 rounded-2xl shadow-lg`}
-            >
-              <h4>{card.title}</h4>
-              <h2 className="text-2xl font-bold">{card.value}</h2>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Chart */}
-        {data.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg p-6 rounded-2xl shadow-xl mb-8"
-          >
-            <h3 className="text-xl font-bold mb-4">
-              Glucose vs Age 📊
-            </h3>
-
-            <BarChart
-              width={600}
-              height={300}
-              data={data.slice(0, 10).map((row) => ({
-                Age: Number(row.Age),
-                Glucose: Number(row.Glucose),
-              }))}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="Age" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="Glucose" fill="#6366f1" />
-            </BarChart>
-          </motion.div>
-        )}
-
-        {/* Table */}
-        {data.length > 0 && (
-          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg p-6 rounded-2xl shadow-xl mb-8 overflow-auto max-h-60">
-            <h3 className="text-xl font-bold mb-4">Data Preview</h3>
-
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  {Object.keys(data[0]).map((key) => (
-                    <th key={key} className="p-2 text-left">
-                      {key}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody>
-                {data.slice(0, 10).map((row, i) => (
-                  <tr key={i} className="border-b">
-                    {Object.values(row).map((val, j) => (
-                      <td key={j} className="p-2">
-                        {val}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* AI */}
-        <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg p-6 rounded-2xl shadow-xl">
-          <h3 className="text-xl font-bold mb-4">Ask AI 🤖</h3>
-
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="w-full p-3 rounded bg-gray-100 dark:bg-gray-700 mb-3 text-black"
-            placeholder="Ask something..."
-          />
+          <ul className="space-y-3">
+            <li>📊 Dashboard</li>
+            <li>📂 Upload CSV</li>
+            <li>🤖 Ask AI</li>
+            <li>⚙️ Settings</li>
+          </ul>
 
           <button
-            onClick={handleQuery}
-            className="bg-blue-500 text-white px-4 py-2 rounded"
+            onClick={() => setDarkMode(!darkMode)}
+            className="mt-6 bg-blue-500 text-white px-3 py-2 rounded"
           >
-            Ask
+            Toggle Mode 🌙
           </button>
+        </div>
 
-          {answer && (
-            <p className="mt-4 text-green-500">{answer}</p>
+        {/* Main Content */}
+        <div className="flex-1 p-6">
+          
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">Welcome 👋</h1>
+
+            <input
+              type="file"
+              onChange={handleFile}
+              className="border p-2 rounded"
+            />
+          </div>
+
+          {/* Cards */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
+              <h3>Total Sales</h3>
+              <p className="text-green-500 text-xl">₹50,000</p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
+              <h3>Orders</h3>
+              <p className="text-blue-500 text-xl">120</p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
+              <h3>Customers</h3>
+              <p className="text-purple-500 text-xl">80</p>
+            </div>
+          </div>
+
+          {/* Insights */}
+          {data.length > 0 && (
+            <div className="mt-8 bg-white dark:bg-gray-800 p-4 rounded shadow">
+              <h2 className="text-xl font-bold mb-4">Basic Insights</h2>
+
+              <p>Total Records: {data.length}</p>
+
+              <p>
+                Average Glucose:{" "}
+                {(
+                  data.reduce(
+                    (sum, row) => sum + Number(row.Glucose || 0),
+                    0
+                  ) / data.length
+                ).toFixed(2)}
+              </p>
+
+              <p>
+                Max Age:{" "}
+                {Math.max(...data.map((row) => Number(row.Age || 0)))}
+              </p>
+            </div>
           )}
+
+          {/* Chart */}
+          {data.length > 0 && (
+            <div className="mt-8 bg-white dark:bg-gray-800 p-4 rounded shadow">
+              <h2 className="text-xl font-bold mb-4">Glucose vs Age</h2>
+
+              <BarChart width={600} height={300} data={data.slice(0, 10)}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="Age" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="Glucose" fill="#3b82f6" />
+              </BarChart>
+            </div>
+          )}
+
+          {/* Table */}
+          {data.length > 0 && (
+            <div className="mt-8 bg-white dark:bg-gray-800 p-4 rounded shadow overflow-auto">
+              <h2 className="text-xl font-bold mb-4">Uploaded Data</h2>
+
+              <table className="w-full border">
+                <thead>
+                  <tr>
+                    {Object.keys(data[0]).map((key) => (
+                      <th key={key} className="border p-2">
+                        {key}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.slice(0, 10).map((row, i) => (
+                    <tr key={i}>
+                      {Object.values(row).map((val, j) => (
+                        <td key={j} className="border p-2">
+                          {val}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* AI Section */}
+          <div className="mt-8 bg-white dark:bg-gray-800 p-6 rounded shadow">
+            <h2 className="text-xl font-bold mb-4">Ask AI 🤖</h2>
+
+            <input
+              type="text"
+              placeholder="Ask about your data..."
+              className="border p-3 w-full rounded"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => setQuery("average glucose")}
+                className="bg-gray-200 px-2 py-1 rounded"
+              >
+                Avg Glucose
+              </button>
+
+              <button
+                onClick={() => setQuery("max age")}
+                className="bg-gray-200 px-2 py-1 rounded"
+              >
+                Max Age
+              </button>
+            </div>
+
+            <button
+              onClick={handleQuery}
+              className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+            >
+              Ask
+            </button>
+
+            {answer && (
+              <p className="mt-4 text-green-500 font-semibold">
+                {answer}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>
