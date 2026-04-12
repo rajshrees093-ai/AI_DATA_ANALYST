@@ -6,12 +6,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ TEST ROUTE
 app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
 });
 
-// ✅ AI ROUTE
 app.post("/ask", (req, res) => {
   const { question, data } = req.body;
 
@@ -25,6 +23,7 @@ app.post("/ask", (req, res) => {
     const avg =
       data.reduce((sum, r) => sum + Number(r.Glucose || 0), 0) /
       data.length;
+
     return res.json({
       answer: `Average glucose is ${avg.toFixed(2)}`
     });
@@ -32,6 +31,7 @@ app.post("/ask", (req, res) => {
 
   if (q.includes("max age")) {
     const max = Math.max(...data.map((r) => Number(r.Age || 0)));
+
     return res.json({
       answer: `Max age is ${max}`
     });
@@ -48,7 +48,6 @@ app.post("/ask", (req, res) => {
   });
 });
 
-// ✅ START SERVER
 app.listen(5000, () => {
   console.log("Server running on port 5000 🚀");
 });
