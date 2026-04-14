@@ -1,53 +1,90 @@
 const express = require("express");
 const cors = require("cors");
+const dotenv = require("dotenv");
+const OpenAI = require("openai");
+
+dotenv.config();
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
+// ✅ Debug check
+console.log("API KEY:", process.env.OPENAI_API_KEY ? "Loaded ✅" : "Missing ❌");
+
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Test route
 app.get("/", (req, res) => {
-  res.send("Backend is running 🚀");
+  res.send("Backend running 🚀");
 });
 
-app.post("/ask", (req, res) => {
-  const { question, data } = req.body;
+// MAIN AI ROUTE
+app.post("/api/query", async (req, res) => {
+  try {
+    const { userQuery } = req.body;
 
-  if (!data || data.length === 0) {
-    return res.json({ answer: "Upload data first." });
-  }
+    console.log("Query:", userQuery);
 
-  const q = question.toLowerCase();
+    if (!userQuery) {
+      return res.status(400).json({ error: "Query required" });
+    }
 
-  if (q.includes("average glucose")) {
-    const avg =
-      data.reduce((sum, r) => sum + Number(r.Glucose || 0), 0) /
-      data.length;
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `
+Return ONLY JSON.
 
-    return res.json({
-      answer: `Average glucose is ${avg.toFixed(2)}`
+Format:
+{
+  "operation": "",
+  "column": "",
+  "metric": "",
+  "limit": number
+}
+
+Example:
+Top 5 products →
+{
+  "operation": "top",
+  "column": "product",
+  "metric": "sales",
+  "limit": 5
+}
+`
+        },
+        {
+          role: "user",
+          content: userQuery,
+        },
+      ],
     });
-  }
 
-  if (q.includes("max age")) {
-    const max = Math.max(...data.map((r) => Number(r.Age || 0)));
+    let aiText = response.choices[0].message.content;
 
-    return res.json({
-      answer: `Max age is ${max}`
+    console.log("AI RAW:", aiText);
+
+    aiText = aiText.replace(/```json/g, "").replace(/```/g, "").trim();
+
+    const parsed = JSON.parse(aiText);
+
+    res.json({
+      success: true,
+      structuredQuery: parsed,
     });
-  }
 
-  if (q.includes("total")) {
-    return res.json({
-      answer: `Total records are ${data.length}`
-    });
+  } catch (err) {
+    console.error("ERROR:", err.message);
+    res.status(500).json({ error: err.message });
   }
-
-  return res.json({
-    answer: "Try: average glucose, max age, total records"
-  });
 });
 
+// Start server
 app.listen(5000, () => {
-  console.log("Server running on port 5000 🚀");
+  console.log("Server running on http://localhost:5000");
 });
