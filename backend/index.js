@@ -6,12 +6,16 @@ const OpenAI = require("openai");
 dotenv.config();
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 
-// ✅ Debug check
+// ✅ FIX: increase payload limit
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
+app.use(cors());
+
+// ✅ Debug API key
 console.log("API KEY:", process.env.OPENAI_API_KEY ? "Loaded ✅" : "Missing ❌");
 
+// OpenAI setup
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -21,15 +25,15 @@ app.get("/", (req, res) => {
   res.send("Backend running 🚀");
 });
 
-// MAIN AI ROUTE
+// 🔥 AI QUERY ROUTE (ONLY QUERY — NO DATA)
 app.post("/api/query", async (req, res) => {
   try {
     const { userQuery } = req.body;
 
-    console.log("Query:", userQuery);
+    console.log("👉 Query received:", userQuery);
 
     if (!userQuery) {
-      return res.status(400).json({ error: "Query required" });
+      return res.status(400).json({ error: "Query is required" });
     }
 
     const response = await client.chat.completions.create({
@@ -38,6 +42,8 @@ app.post("/api/query", async (req, res) => {
         {
           role: "system",
           content: `
+Convert user query into JSON.
+
 Return ONLY JSON.
 
 Format:
@@ -48,13 +54,22 @@ Format:
   "limit": number
 }
 
-Example:
+Examples:
+
 Top 5 products →
 {
   "operation": "top",
   "column": "product",
   "metric": "sales",
   "limit": 5
+}
+
+Average sales →
+{
+  "operation": "average",
+  "column": "sales",
+  "metric": "sales",
+  "limit": null
 }
 `
         },
@@ -67,24 +82,34 @@ Top 5 products →
 
     let aiText = response.choices[0].message.content;
 
-    console.log("AI RAW:", aiText);
+    console.log("🧠 AI RAW:", aiText);
 
+    // Clean response
     aiText = aiText.replace(/```json/g, "").replace(/```/g, "").trim();
 
-    const parsed = JSON.parse(aiText);
+    let parsed;
+
+    try {
+      parsed = JSON.parse(aiText);
+    } catch (err) {
+      return res.status(500).json({
+        error: "Invalid JSON from AI",
+        raw: aiText,
+      });
+    }
 
     res.json({
       success: true,
       structuredQuery: parsed,
     });
 
-  } catch (err) {
-    console.error("ERROR:", err.message);
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error("❌ ERROR:", error.message);
+    res.status(500).json({ error: error.message });
   }
 });
 
 // Start server
 app.listen(5000, () => {
-  console.log("Server running on http://localhost:5000");
+  console.log("🚀 Server running at http://localhost:5000");
 });
