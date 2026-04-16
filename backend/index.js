@@ -7,15 +7,14 @@ dotenv.config();
 
 const app = express();
 
-// ✅ FIX: increase payload limit
+// ✅ FIX: prevent payload error
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cors());
 
-// ✅ Debug API key
+// Debug
 console.log("API KEY:", process.env.OPENAI_API_KEY ? "Loaded ✅" : "Missing ❌");
 
-// OpenAI setup
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -25,15 +24,15 @@ app.get("/", (req, res) => {
   res.send("Backend running 🚀");
 });
 
-// 🔥 AI QUERY ROUTE (ONLY QUERY — NO DATA)
+// 🔥 AI QUERY ROUTE
 app.post("/api/query", async (req, res) => {
   try {
     const { userQuery } = req.body;
 
-    console.log("👉 Query received:", userQuery);
+    console.log("👉 Query:", userQuery);
 
     if (!userQuery) {
-      return res.status(400).json({ error: "Query is required" });
+      return res.status(400).json({ error: "Query required" });
     }
 
     const response = await client.chat.completions.create({
@@ -64,11 +63,11 @@ Top 5 products →
   "limit": 5
 }
 
-Average sales →
+Average glucose →
 {
   "operation": "average",
-  "column": "sales",
-  "metric": "sales",
+  "column": "glucose",
+  "metric": "glucose",
   "limit": null
 }
 `
@@ -84,7 +83,6 @@ Average sales →
 
     console.log("🧠 AI RAW:", aiText);
 
-    // Clean response
     aiText = aiText.replace(/```json/g, "").replace(/```/g, "").trim();
 
     let parsed;
