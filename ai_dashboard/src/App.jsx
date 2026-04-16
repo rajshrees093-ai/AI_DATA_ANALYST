@@ -28,30 +28,36 @@ function App() {
     });
   };
 
-  // ✅ AI Query
- const handleQuery = async () => {
-  if (!query) return;
+  // ✅ AI Query (FIXED)
+  const handleQuery = async () => {
+    if (!query) return;
 
-  setAnswer("Thinking... 🤖");
+    setAnswer("Thinking... 🤖");
 
-  try {
-    const res = await fetch("http://localhost:5000/ask", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        question: query,
-        data: data,
-      }),
-    });
+    try {
+      const res = await fetch("http://localhost:5000/api/query", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userQuery: query, // ✅ ONLY send query (NO DATA)
+        }),
+      });
 
-    const result = await res.json();
-    setAnswer(result.answer);
-  } catch {
-    setAnswer("Server not responding ❌");
-  }
-};
+      const result = await res.json();
+
+      setAnswer(
+        result.success
+          ? JSON.stringify(result.structuredQuery, null, 2)
+          : "Error ❌"
+      );
+
+    } catch (err) {
+      console.error(err);
+      setAnswer("Server not responding ❌");
+    }
+  };
 
   return (
     <div className={darkMode ? "dark" : ""}>
@@ -147,36 +153,6 @@ function App() {
             </div>
           )}
 
-          {/* Table */}
-          {data.length > 0 && (
-            <div className="mt-8 bg-white dark:bg-gray-800 p-4 rounded shadow overflow-auto">
-              <h2 className="text-xl font-bold mb-4">Uploaded Data</h2>
-
-              <table className="w-full border">
-                <thead>
-                  <tr>
-                    {Object.keys(data[0]).map((key) => (
-                      <th key={key} className="border p-2">
-                        {key}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.slice(0, 10).map((row, i) => (
-                    <tr key={i}>
-                      {Object.values(row).map((val, j) => (
-                        <td key={j} className="border p-2">
-                          {val}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
           {/* AI Section */}
           <div className="mt-8 bg-white dark:bg-gray-800 p-6 rounded shadow">
             <h2 className="text-xl font-bold mb-4">Ask AI 🤖</h2>
@@ -189,22 +165,6 @@ function App() {
               onChange={(e) => setQuery(e.target.value)}
             />
 
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={() => setQuery("average glucose")}
-                className="bg-gray-200 px-2 py-1 rounded"
-              >
-                Avg Glucose
-              </button>
-
-              <button
-                onClick={() => setQuery("max age")}
-                className="bg-gray-200 px-2 py-1 rounded"
-              >
-                Max Age
-              </button>
-            </div>
-
             <button
               onClick={handleQuery}
               className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
@@ -213,9 +173,9 @@ function App() {
             </button>
 
             {answer && (
-              <p className="mt-4 text-green-500 font-semibold">
+              <pre className="mt-4 text-green-500 font-semibold">
                 {answer}
-              </p>
+              </pre>
             )}
           </div>
         </div>
