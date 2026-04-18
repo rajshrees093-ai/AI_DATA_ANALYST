@@ -174,7 +174,7 @@ function App() {
 
             {answer && (
               <pre className="mt-4 text-green-500 font-semibold">
-                
+                {answer}
               </pre>
             )}
           </div>
