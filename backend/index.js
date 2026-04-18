@@ -1,86 +1,98 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const OpenAI = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 dotenv.config();
 
 const app = express();
 
-// ✅ prevent payload crash
+// ✅ middlewares
 app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
-// ✅ API key check
-if (!process.env.OPENAI_API_KEY) {
-  console.log("❌ OPENAI_API_KEY missing");
+// ✅ check API key
+if (!process.env.GEMINI_API_KEY) {
+  console.log("❌ GEMINI_API_KEY missing in .env");
   process.exit(1);
 } else {
-  console.log("✅ API KEY LOADED");
+  console.log("✅ Gemini API Key Loaded");
 }
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// ✅ Gemini setup
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// test route
+// ✅ TEST ROUTES (important for debugging)
 app.get("/", (req, res) => {
-  res.send("Backend running 🚀");
+  res.send("Backend running with Gemini 🚀");
 });
 
-// 🔥 AI ROUTE (SAFE VERSION)
+app.get("/test", (req, res) => {
+  res.json({ status: "API working ✅" });
+});
+
+// 🔥 MAIN AI ROUTE
 app.post("/api/query", async (req, res) => {
   try {
     const { userQuery } = req.body;
 
-    console.log("👉 Query:", userQuery);
+    console.log("👉 Query received:", userQuery);
 
     if (!userQuery) {
       return res.status(400).json({ error: "Query required" });
     }
 
-    const response = await client.responses.create({
-      model: "gpt-4.1-mini",
-      input: `Convert this query into JSON.
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-Query: ${userQuery}
+    const prompt = `
+Convert the following user query into structured JSON.
 
-Return ONLY JSON:
+Query: "${userQuery}"
+
+Return ONLY JSON in this format:
 {
   "operation": "",
   "column": "",
   "metric": "",
   "limit": number
-}`,
-    });
+}
 
-    // ✅ SAFE extraction
-    let aiText = "";
+Examples:
+Top 5 products ->
+{
+  "operation": "top",
+  "column": "product",
+  "metric": "sales",
+  "limit": 5
+}
 
-    if (response.output && response.output.length > 0) {
-      aiText = response.output[0]?.content?.[0]?.text || "";
-    }
+Average glucose ->
+{
+  "operation": "average",
+  "column": "glucose",
+  "metric": "glucose",
+  "limit": null
+}
+`;
 
-    if (!aiText) {
-      return res.status(500).json({
-        error: "Empty AI response",
-        fullResponse: response,
-      });
-    }
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let text = response.text();
 
-    console.log("🧠 AI RAW:", aiText);
+    console.log("🧠 RAW AI:", text);
 
-    aiText = aiText.replace(/```json/g, "").replace(/```/g, "").trim();
+    // clean markdown
+    text = text.replace(/```json/g, "").replace(/```/g, "").trim();
 
     let parsed;
 
     try {
-      parsed = JSON.parse(aiText);
+      parsed = JSON.parse(text);
     } catch (err) {
       return res.status(500).json({
-        error: "Invalid JSON",
-        raw: aiText,
+        error: "Invalid JSON from AI",
+        raw: text,
       });
     }
 
@@ -89,17 +101,17 @@ Return ONLY JSON:
       structuredQuery: parsed,
     });
 
-  } catch (error) {
-    console.error("❌ FULL ERROR:", error);
+  } catch (err) {
+    console.error("❌ ERROR:", err.message);
 
     res.status(500).json({
       error: "Server failed",
-      details: error.message,
+      details: err.message,
     });
   }
 });
 
-// start server
+// ✅ start server
 app.listen(5000, () => {
   console.log("🚀 Server running at http://localhost:5000");
 });
