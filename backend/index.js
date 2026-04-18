@@ -7,24 +7,29 @@ dotenv.config();
 
 const app = express();
 
-// ✅ FIX: prevent payload error
+// ✅ prevent payload crash
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cors());
 
-// Debug
-console.log("API KEY:", process.env.OPENAI_API_KEY ? "Loaded ✅" : "Missing ❌");
+// ✅ API key check
+if (!process.env.OPENAI_API_KEY) {
+  console.log("❌ OPENAI_API_KEY missing");
+  process.exit(1);
+} else {
+  console.log("✅ API KEY LOADED");
+}
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Test route
+// test route
 app.get("/", (req, res) => {
   res.send("Backend running 🚀");
 });
 
-// 🔥 AI QUERY ROUTE
+// 🔥 AI ROUTE (SAFE VERSION)
 app.post("/api/query", async (req, res) => {
   try {
     const { userQuery } = req.body;
@@ -35,51 +40,34 @@ app.post("/api/query", async (req, res) => {
       return res.status(400).json({ error: "Query required" });
     }
 
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `
-Convert user query into JSON.
+    const response = await client.responses.create({
+      model: "gpt-4.1-mini",
+      input: `Convert this query into JSON.
 
-Return ONLY JSON.
+Query: ${userQuery}
 
-Format:
+Return ONLY JSON:
 {
   "operation": "",
   "column": "",
   "metric": "",
   "limit": number
-}
-
-Examples:
-
-Top 5 products →
-{
-  "operation": "top",
-  "column": "product",
-  "metric": "sales",
-  "limit": 5
-}
-
-Average glucose →
-{
-  "operation": "average",
-  "column": "glucose",
-  "metric": "glucose",
-  "limit": null
-}
-`
-        },
-        {
-          role: "user",
-          content: userQuery,
-        },
-      ],
+}`,
     });
 
-    let aiText = response.choices[0].message.content;
+    // ✅ SAFE extraction
+    let aiText = "";
+
+    if (response.output && response.output.length > 0) {
+      aiText = response.output[0]?.content?.[0]?.text || "";
+    }
+
+    if (!aiText) {
+      return res.status(500).json({
+        error: "Empty AI response",
+        fullResponse: response,
+      });
+    }
 
     console.log("🧠 AI RAW:", aiText);
 
@@ -91,7 +79,7 @@ Average glucose →
       parsed = JSON.parse(aiText);
     } catch (err) {
       return res.status(500).json({
-        error: "Invalid JSON from AI",
+        error: "Invalid JSON",
         raw: aiText,
       });
     }
@@ -102,12 +90,16 @@ Average glucose →
     });
 
   } catch (error) {
-    console.error("❌ ERROR:", error.message);
-    res.status(500).json({ error: error.message });
+    console.error("❌ FULL ERROR:", error);
+
+    res.status(500).json({
+      error: "Server failed",
+      details: error.message,
+    });
   }
 });
 
-// Start server
+// start server
 app.listen(5000, () => {
   console.log("🚀 Server running at http://localhost:5000");
 });
