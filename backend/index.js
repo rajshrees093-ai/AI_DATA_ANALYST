@@ -96,7 +96,10 @@ Average glucose ->
       });
     }
 
-  
+    res.json({
+      success: true,
+      structuredQuery: parsed,
+    });
 
   } catch (err) {
     console.error("❌ ERROR:", err.message);
