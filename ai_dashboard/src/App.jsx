@@ -1,21 +1,12 @@
 import { useState } from "react";
 import Papa from "papaparse";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-} from "recharts";
 
 function App() {
   const [data, setData] = useState([]);
   const [query, setQuery] = useState("");
   const [answer, setAnswer] = useState("");
-  const [darkMode, setDarkMode] = useState(false);
 
-  // CSV Upload
+  // CSV upload
   const handleFile = (e) => {
     const file = e.target.files[0];
 
@@ -28,7 +19,7 @@ function App() {
     });
   };
 
-  // ✅ SAFE AI QUERY
+  // AI query
   const handleQuery = async () => {
     if (!query) return;
 
@@ -47,11 +38,10 @@ function App() {
 
       const result = await res.json();
 
-      // ✅ SAFE handling
       if (result.success) {
         setAnswer(JSON.stringify(result.structuredQuery, null, 2));
       } else {
-        setAnswer(result.error || "Something went wrong ❌");
+        setAnswer("Error ❌");
       }
 
     } catch (err) {
@@ -61,84 +51,47 @@ function App() {
   };
 
   return (
-    <div className={darkMode ? "dark" : ""}>
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-black dark:text-white flex">
+    <div style={{ padding: "20px" }}>
+      <h1>AI Data Analyst Dashboard</h1>
 
-        {/* Sidebar */}
-        <div className="w-64 bg-white dark:bg-gray-800 p-5 shadow">
-          <h1 className="text-2xl font-bold mb-6">AI Dashboard</h1>
+      {/* Upload CSV */}
+      <input type="file" onChange={handleFile} />
 
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="mt-6 bg-blue-500 text-white px-3 py-2 rounded"
-          >
-            Toggle Mode 🌙
-          </button>
-        </div>
+      {/* Table */}
+      {data.length > 0 && (
+        <table border="1" style={{ marginTop: "20px" }}>
+          <thead>
+            <tr>
+              {Object.keys(data[0]).map((key) => (
+                <th key={key}>{key}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.slice(0, 10).map((row, i) => (
+              <tr key={i}>
+                {Object.values(row).map((val, j) => (
+                  <td key={j}>{val}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
-        {/* Main */}
-        <div className="flex-1 p-6">
+      {/* AI Section */}
+      <div style={{ marginTop: "20px" }}>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Ask AI (e.g. average glucose)"
+        />
 
-          {/* Upload */}
-          <input type="file" onChange={handleFile} />
+        <button onClick={handleQuery}>Ask</button>
 
-          {/* TABLE (FIXED — WON’T DISAPPEAR) */}
-          {data.length > 0 && (
-            <div className="mt-6 overflow-auto">
-              <table className="border w-full">
-                <thead>
-                  <tr>
-                    {Object.keys(data[0]).map((key) => (
-                      <th key={key} className="border p-2">{key}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.slice(0, 10).map((row, i) => (
-                    <tr key={i}>
-                      {Object.values(row).map((val, j) => (
-                        <td key={j} className="border p-2">{val}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Chart */}
-          {data.length > 0 && (
-            <BarChart width={500} height={300} data={data.slice(0, 10)}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="Age" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="Glucose" />
-            </BarChart>
-          )}
-
-          {/* AI */}
-          <div className="mt-6">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Ask AI..."
-              className="border p-2"
-            />
-
-            <button
-              onClick={handleQuery}
-              className="ml-2 bg-blue-500 text-white px-3 py-1"
-            >
-              Ask
-            </button>
-
-            <pre className="mt-4 text-green-500 whitespace-pre-wrap">
-              {answer}
-            </pre>
-          </div>
-
-        </div>
+        <pre style={{ marginTop: "10px", color: "green" }}>
+          {answer}
+        </pre>
       </div>
     </div>
   );
