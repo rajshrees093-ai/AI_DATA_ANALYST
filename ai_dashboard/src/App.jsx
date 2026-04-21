@@ -1,10 +1,19 @@
 import { useState } from "react";
 import Papa from "papaparse";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 
 function App() {
   const [data, setData] = useState([]);
   const [query, setQuery] = useState("");
   const [answer, setAnswer] = useState("");
+  const [darkMode, setDarkMode] = useState(false);
 
   // CSV upload
   const handleFile = (e) => {
@@ -51,47 +60,95 @@ function App() {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>AI Data Analyst Dashboard</h1>
+    <div className={darkMode ? "dark" : ""}>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-black dark:text-white flex">
+        
+        {/* Sidebar */}
+        <div className="w-64 bg-white dark:bg-gray-800 p-5 shadow">
+          <h1 className="text-2xl font-bold mb-6">AI Dashboard</h1>
 
-      {/* Upload CSV */}
-      <input type="file" onChange={handleFile} />
+          <ul className="space-y-3">
+            <li>📊 Dashboard</li>
+            <li>📂 Upload CSV</li>
+            <li>🤖 Ask AI</li>
+            <li>⚙️ Settings</li>
+          </ul>
 
-      {/* Table */}
-      {data.length > 0 && (
-        <table border="1" style={{ marginTop: "20px" }}>
-          <thead>
-            <tr>
-              {Object.keys(data[0]).map((key) => (
-                <th key={key}>{key}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.slice(0, 10).map((row, i) => (
-              <tr key={i}>
-                {Object.values(row).map((val, j) => (
-                  <td key={j}>{val}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className="mt-6 bg-blue-500 text-white px-3 py-2 rounded"
+          >
+            Toggle Mode 🌙
+          </button>
+        </div>
 
-      {/* AI Section */}
-      <div style={{ marginTop: "20px" }}>
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Ask AI (e.g. average glucose)"
-        />
+        {/* Main */}
+        <div className="flex-1 p-6">
+          
+          {/* Upload */}
+          <input type="file" onChange={handleFile} className="border p-2 rounded" />
 
-        <button onClick={handleQuery}>Ask</button>
+          {/* Table */}
+          {data.length > 0 && (
+            <div className="mt-6 overflow-auto">
+              <table className="border w-full">
+                <thead>
+                  <tr>
+                    {Object.keys(data[0]).map((key) => (
+                      <th key={key} className="border p-2">{key}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.slice(0, 10).map((row, i) => (
+                    <tr key={i}>
+                      {Object.values(row).map((val, j) => (
+                        <td key={j} className="border p-2">{val}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-        <pre style={{ marginTop: "10px", color: "green" }}>
-          {answer}
-        </pre>
+          {/* Chart */}
+          {data.length > 0 && (
+            <div className="mt-6">
+              <BarChart width={500} height={300} data={data.slice(0, 10)}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="Age" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="Glucose" fill="#3b82f6" />
+              </BarChart>
+            </div>
+          )}
+
+          {/* AI */}
+          <div className="mt-6 bg-white dark:bg-gray-800 p-4 rounded shadow">
+            <h2 className="text-xl font-bold mb-4">Ask AI 🤖</h2>
+
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Ask (e.g. average glucose)"
+              className="border p-2 w-full"
+            />
+
+            <button
+              onClick={handleQuery}
+              className="mt-3 bg-blue-500 text-white px-4 py-2 rounded"
+            >
+              Ask
+            </button>
+
+            <pre className="mt-4 text-green-500 whitespace-pre-wrap">
+              {answer}
+            </pre>
+          </div>
+
+        </div>
       </div>
     </div>
   );
