@@ -15,7 +15,7 @@ function App() {
   const [answer, setAnswer] = useState("");
   const [darkMode, setDarkMode] = useState(false);
 
-  // CSV upload
+  // ✅ CSV Upload
   const handleFile = (e) => {
     const file = e.target.files[0];
 
@@ -28,7 +28,40 @@ function App() {
     });
   };
 
-  // AI query
+  // 🔥 PROCESS DATA (MAIN LOGIC)
+  const processData = (aiQuery) => {
+    if (!data.length) return "No data uploaded ❌";
+
+    // 🔥 Fix column case issue
+    const column = Object.keys(data[0]).find(
+      (key) => key.toLowerCase() === aiQuery.column.toLowerCase()
+    );
+
+    if (!column) return "Column not found ❌";
+
+    const values = data.map((row) => Number(row[column]) || 0);
+
+    switch (aiQuery.operation) {
+      case "average":
+        const avg =
+          values.reduce((a, b) => a + b, 0) / values.length;
+        return `Average ${column}: ${avg.toFixed(2)}`;
+
+      case "max":
+        return `Max ${column}: ${Math.max(...values)}`;
+
+      case "min":
+        return `Min ${column}: ${Math.min(...values)}`;
+
+      case "count":
+        return `Total Records: ${data.length}`;
+
+      default:
+        return "Operation not supported ❌";
+    }
+  };
+
+  // ✅ AI QUERY
   const handleQuery = async () => {
     if (!query) return;
 
@@ -48,7 +81,8 @@ function App() {
       const result = await res.json();
 
       if (result.success) {
-        setAnswer(JSON.stringify(result.structuredQuery, null, 2));
+        const finalAnswer = processData(result.structuredQuery);
+        setAnswer(finalAnswer);
       } else {
         setAnswer("Error ❌");
       }
@@ -62,7 +96,7 @@ function App() {
   return (
     <div className={darkMode ? "dark" : ""}>
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-black dark:text-white flex">
-        
+
         {/* Sidebar */}
         <div className="w-64 bg-white dark:bg-gray-800 p-5 shadow">
           <h1 className="text-2xl font-bold mb-6">AI Dashboard</h1>
@@ -84,9 +118,13 @@ function App() {
 
         {/* Main */}
         <div className="flex-1 p-6">
-          
+
           {/* Upload */}
-          <input type="file" onChange={handleFile} className="border p-2 rounded" />
+          <input
+            type="file"
+            onChange={handleFile}
+            className="border p-2 rounded"
+          />
 
           {/* Table */}
           {data.length > 0 && (
@@ -125,15 +163,15 @@ function App() {
             </div>
           )}
 
-          {/* AI */}
-          <div className="mt-6 bg-white dark:bg-gray-800 p-4 rounded shadow">
+          {/* AI Section */}
+          <div className="mt-6 bg-white dark:bg-gray-800 p-6 rounded shadow">
             <h2 className="text-xl font-bold mb-4">Ask AI 🤖</h2>
 
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Ask (e.g. average glucose)"
-              className="border p-2 w-full"
+              className="border p-3 w-full rounded"
             />
 
             <button
@@ -143,9 +181,9 @@ function App() {
               Ask
             </button>
 
-            <pre className="mt-4 text-green-500 whitespace-pre-wrap">
+            <p className="mt-4 text-green-500 font-semibold">
               {answer}
-            </pre>
+            </p>
           </div>
 
         </div>
