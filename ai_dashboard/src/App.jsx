@@ -9,7 +9,7 @@ import {
   CartesianGrid,
 } from "recharts";
 
-function App() {
+
   const [data, setData] = useState([]);
   const [query, setQuery] = useState("");
   const [answer, setAnswer] = useState("");
